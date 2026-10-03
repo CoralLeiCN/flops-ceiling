@@ -1,0 +1,12 @@
+/target/
+/artifacts/
+/.cache/
+
+# Detailed experiment output and history stay outside version control.
+/docs/experiments/
+/docs/research/
+/experiments/
+/results/
+*.nsys-rep
+*.ncu-rep
+*.qdstrm

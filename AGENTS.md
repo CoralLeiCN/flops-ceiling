@@ -1,0 +1,66 @@
+# Agent Instructions
+
+Adapted from `/home/coral/repos/DGXSpark-Small-LLMs/AGENTS.md` and its
+benchmarking and experiment-journal guidance for this repository's scope.
+
+- Use Rust for this project and Cargo for dependency management, builds, and
+  command execution. The initial target is DGX Spark; focus on BF16, FP32, FP8, and FP4.
+- Do not add tests unless the user explicitly asks for tests or the change is a
+  regression fix that needs a regression test.
+- Keep documentation proportional to implemented behavior and observed results.
+  Avoid speculative implementation or troubleshooting documentation.
+- Keep specifications, design notes, usage guides and attribution documents in
+  `docs/`. Keep `README.md`, `LICENSE` and `AGENTS.md` at the repository root.
+- Record important assumptions, tradeoffs, and user corrections in the relevant
+  authoritative documentation. Update that documentation when direction changes;
+  do not maintain a duplicate correction history.
+
+## Performance experiments
+
+- Separate warmup from measurement. Complete compilation and initialization
+  before timing, and record warmup and measurement boundaries.
+- Declare repetition counts or convergence criteria before running. Label a
+  single pass preliminary; repeat measurements and report variability before
+  declaring a performance winner.
+- Compare configurations with matched workloads, inputs, timing boundaries,
+  warmup, and cache conditions. Change one setting at a time where possible and
+  disclose other changes needed for the comparison.
+- Record the exact command, repository revision, hardware, driver, CUDA and Rust
+  toolchain versions, dependencies, precision, workload dimensions, configuration,
+  UTC timestamps, and exit or error state.
+- State the FLOP-counting method and timing scope. Distinguish measured kernel
+  throughput, estimated model-operation rates, and advertised hardware peaks.
+  Historical SGLang estimates are not measurements of this project's TFLOPS ceiling.
+- Collect supported GPU telemetry, including temperature, utilization, and power.
+  Record unavailable measurements explicitly; missing measurements are not zero.
+- Preserve raw measurements and failed attempts in unique artifact directories.
+  Keep large raw artifacts outside Git and disposable worktrees, and record their
+  locations in `docs/final-report.md`.
+
+## Experiment records
+
+- Keep **one maintained results report in the repository**:
+  `docs/final-report.md`. Consolidate verified conclusions, comparison scope,
+  limitations and external evidence locations there. Keep usage/API guides
+  focused on implemented behavior rather than duplicating result tables.
+- Store detailed results, append-only experiment journals, imported reports and
+  research notes outside the repository, under
+  `/home/coral/inference-artifacts/flops-ceiling/` on this host. Keep them out of
+  Git; local scratch output belongs in ignored `artifacts/`, `experiments/` or
+  `results/` directories. Do not recreate `docs/experiments/` or `docs/research/`.
+- Organize external journals by hardware and precision with a `README.md` index.
+- Store each experiment attempt or follow-up in its own UTC-timestamped file:
+  `<YYYY-MM-DDTHH-MM-SSZ>-<short-slug>.md`.
+- Assign the next directory-local ID (`RUN-0001`, `RUN-0002`, and so on), place it
+  immediately below the title, and list it in the index. Never reuse or renumber
+  IDs; keep the recorded count and next ID in the index.
+- Record observed build, GPU discovery, kernel compilation, execution, and
+  validation failures before ending the work session, even if unresolved.
+  Include the redacted command and error, environment, evidence-based diagnosis,
+  attempted fix, verification result, status, and reusable lesson.
+- Preserve chronology. Link a new follow-up record to an earlier attempt instead
+  of adding later findings to the earlier file. Never fabricate historical runs
+  or record credentials or other secrets.
+- Keep imported reports in the external archive as historical references.
+  Preserve their original dates, run IDs, results, and limitations; do not count
+  them as experiments performed in this repository.
