@@ -11,7 +11,7 @@ use std::{
 #[derive(Parser)]
 #[command(
     version,
-    about = "Validated dense GEMM throughput on NVIDIA GPUs (BF16/FP8/NVFP4 and full FP32)"
+    about = "Validated dense GEMM throughput on NVIDIA GPUs (BF16/FP8/NVFP4, full FP32 and TF32)"
 )]
 struct Args {
     #[arg(long, value_enum, default_value = "cublaslt")]
@@ -102,6 +102,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "host":command("uname", &["-a"]),
         "ld_library_path":std::env::var("LD_LIBRARY_PATH").ok(),
         "cuda_visible_devices":std::env::var("CUDA_VISIBLE_DEVICES").ok(),
+        "nvidia_tf32_override":std::env::var("NVIDIA_TF32_OVERRIDE").ok(),
         "cuda_home":std::env::var("CUDA_HOME").ok(),
         "telemetry_csv_columns":["name","uuid","pci.bus_id","driver_version","temperature.gpu","utilization.gpu","power.draw","clocks.sm","clocks.mem"],
     });

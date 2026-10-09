@@ -101,6 +101,11 @@ impl Kernel {
             Precision::Bf16 => return self.launch_dense::<bf16, bf16>(tile),
             Precision::Fp8 => return self.launch_dense::<f8e4m3fn, bf16>(tile),
             Precision::Fp32 => return self.launch_dense::<f32, f32>(tile),
+            Precision::Tf32 => {
+                return Err(crate::Error(
+                    "TF32 is supported only by the cuBLASLt backend".into(),
+                ));
+            }
             Precision::Nvfp4 => (),
         }
         let [bm, bn, bk] = tile;

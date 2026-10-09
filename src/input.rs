@@ -41,7 +41,7 @@ pub(crate) fn generate(rows: usize, k: usize, precision: Precision, seed: u64) -
     let mut bytes = vec![
         0;
         match precision {
-            Precision::Fp32 => len * 4,
+            Precision::Fp32 | Precision::Tf32 => len * 4,
             Precision::Bf16 => len * 2,
             Precision::Fp8 => len,
             Precision::Nvfp4 => len / 2,
@@ -65,7 +65,7 @@ pub(crate) fn generate(rows: usize, k: usize, precision: Precision, seed: u64) -
                 let i = row * k + block * 16 + lane;
                 let bits = hash(seed.wrapping_add(i as u64));
                 decoded[i] = match precision {
-                    Precision::Fp32 => {
+                    Precision::Fp32 | Precision::Tf32 => {
                         let value =
                             (((bits >> 32) as u32) as f64 / (u32::MAX as f64) * 2.0 - 1.0) as f32;
                         bytes[i * 4..i * 4 + 4].copy_from_slice(&value.to_ne_bytes());

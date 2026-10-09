@@ -42,9 +42,18 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub enum Precision {
     /// Full IEEE FP32 inputs, accumulation and output; no TF32 substitution.
     Fp32,
+    /// FP32 storage with TF32 Tensor Core multiplication and FP32 accumulation.
+    /// Supported by cuBLASLt only.
+    Tf32,
     Bf16,
     Fp8,
     Nvfp4,
+}
+
+impl Precision {
+    pub(crate) fn fp32_storage(self) -> bool {
+        matches!(self, Self::Fp32 | Self::Tf32)
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ValueEnum)]
@@ -149,6 +158,11 @@ impl Default for BenchmarkConfig {
 }
 impl BenchmarkConfig {
     pub fn validate(&self) -> Result<()> {
+        if self.precision == Precision::Tf32 && self.backend != Backend::Cublaslt {
+            return Err(Error(
+                "TF32 is supported only by the cuBLASLt backend".into(),
+            ));
+        }
         if self.backend == Backend::Cutile {
             if !cfg!(feature = "cutile") {
                 return Err(Error(
@@ -230,6 +244,9 @@ pub struct Candidate {
     /// first three words are [tile_N, tile_M, tile_K]; remaining words are zero.
     pub opaque_config: [u64; 8],
     pub workspace_bytes: usize,
+    /// cuBLASLt numerical implementation flags; absent for cuTile/older records.
+    #[serde(default)]
+    pub numerical_impl_flags: Option<u64>,
     pub validation: Option<Validation>,
     pub tuning_ms_per_gemm: Vec<f64>,
     pub error: Option<String>,

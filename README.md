@@ -2,6 +2,7 @@
 
 This project uses Rust to benchmark the TFLOPS performance of NVIDIA devices.
 The first target is DGX Spark, with a focus on BF16, FP32, FP8, and FP4.
+cuBLASLt also supports an explicit TF32 mode for comparison with full FP32.
 
 For GPU kernel development in Rust, see NVIDIA's
 [Introducing CUDA Rust: Two Tracks for Writing GPU Kernels](https://developer.nvidia.com/blog/introducing-cuda-rust-two-tracks-for-writing-gpu-kernels/).

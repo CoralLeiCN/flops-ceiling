@@ -9,6 +9,11 @@ Spark with BF16, FP32, FP8, and FP4 benchmarks.
   validation and explicit timing boundaries. Both cuBLASLt and the optional
   Rust cuTile backend support BF16, FP8 E4M3, NVFP4 and FP32. FP32 has FP32
   output; the other inputs use BF16 output. All accumulate in FP32.
+  cuBLASLt additionally supports explicit TF32 multiplication with FP32
+  storage/accumulation/output, matched FP32 inputs, validation against original
+  inputs, and algorithm flags verifying the advertised TF32 Tensor Core
+  implementation (not profiler counters). TF32 is
+  not implemented for cuTile or the register API.
 - Every precision shares tuning, graph/stream timing, structured artifacts,
   telemetry and optional Nsight capture. Full FP32 is never labeled TF32;
   cuBLASLt uses its pedantic FP32 compute mode.
