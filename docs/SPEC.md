@@ -1,7 +1,9 @@
-# Project specification
+# Package specification
 
-This project uses Rust to measure NVIDIA GPU TFLOPS, initially targeting DGX
-Spark with BF16, FP32, FP8, and FP4 benchmarks.
+This package uses Rust to measure NVIDIA GPU TFLOPS, initially targeting DGX
+Spark with BF16, FP32, FP8, and FP4 benchmarks. This document describes the
+reusable package's implemented behavior. Experiment-specific intent,
+specifications and plans are maintained in external experiment workspaces.
 
 ## Benchmark scope
 
