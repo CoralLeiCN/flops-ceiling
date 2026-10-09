@@ -148,13 +148,16 @@ impl Plan {
             };
             let a_scale = upload_scales(a, c.shape.m)?;
             let b_scale = upload_scales(b, c.shape.n)?;
-            let fp32 = c.precision == Precision::Fp32;
+            let fp32 = c.precision.fp32_storage();
             let output = Buffer::new(c.shape.m * c.shape.n * if fp32 { 4 } else { 2 })?;
             let workspace = Buffer::new(c.workspace_bytes)?;
+            let compute = match c.precision {
+                Precision::Fp32 => CUBLAS_COMPUTE_32F_PEDANTIC,
+                Precision::Tf32 => CUBLAS_COMPUTE_32F_FAST_TF32,
+                _ => CUBLAS_COMPUTE_32F,
+            };
             let op = Object::new(
-                // PEDANTIC enforces full FP32 arithmetic, excluding TF32 and
-                // reduced-precision emulation algorithms for the FP32 benchmark.
-                |p| cublasLtMatmulDescCreate(p, if fp32 { 69 } else { 68 }, 0),
+                |p| cublasLtMatmulDescCreate(p, compute, 0),
                 cublasLtMatmulDescDestroy,
                 true,
                 "matmul descriptor",
@@ -183,7 +186,7 @@ impl Plan {
                 }
             }
             let dtype = match c.precision {
-                Precision::Fp32 => 0,
+                Precision::Fp32 | Precision::Tf32 => 0,
                 Precision::Bf16 => 14,
                 Precision::Fp8 => 28,
                 Precision::Nvfp4 => 33,
@@ -335,7 +338,7 @@ impl Plan {
                 "validation download",
             )?;
         }
-        let fp32 = self.precision == Precision::Fp32;
+        let fp32 = self.precision.fp32_storage();
         let output: Vec<f32> = if fp32 {
             bytes
                 .chunks_exact(4)
@@ -348,7 +351,14 @@ impl Plan {
                 .collect()
         };
         let all_finite = output.iter().all(|x| x.is_finite());
-        let (relative_limit, rms_limit) = if fp32 { (1e-5, 5e-6) } else { (0.01, 0.005) };
+        // TF32 is checked against the original, unrounded FP32 inputs. These
+        // benchmark tolerances permit its input rounding error without relaxing
+        // full-FP32 validation or quantizing away the accuracy comparison.
+        let (relative_limit, rms_limit) = match self.precision {
+            Precision::Fp32 => (1e-5, 5e-6),
+            Precision::Tf32 => (1e-3, 2e-3),
+            _ => (0.01, 0.005),
+        };
         let norm = expected.iter().map(|(_, x)| x * x).sum::<f64>();
         let rms = (norm / expected.len() as f64).sqrt();
         let mut squared_error = 0.0;
@@ -631,12 +641,45 @@ pub(crate) fn run(c: &BenchmarkConfig, profiler_range: bool) -> Result<Benchmark
             algorithm_id,
             opaque_config: h.algo.data,
             workspace_bytes: h.workspace_size,
+            numerical_impl_flags: None,
             validation: None,
             tuning_ms_per_gemm: vec![],
             error: None,
         };
         let attempt = (|| -> Result<f64> {
             blas(h.state, "heuristic state")?;
+            if c.backend == Backend::Cublaslt {
+                let mut flags = 0_u64;
+                let mut bytes = 0;
+                // SAFETY: the capability has uint64_t type in cublasLt.h.
+                unsafe {
+                    blas(
+                        cublasLtMatmulAlgoCapGetAttribute(
+                            &h.algo,
+                            CUBLASLT_ALGO_CAP_NUMERICAL_IMPL_FLAGS,
+                            (&mut flags as *mut u64).cast(),
+                            size_of::<u64>(),
+                            &mut bytes,
+                        ),
+                        "numerical implementation flags",
+                    )?;
+                }
+                if bytes != size_of::<u64>() {
+                    return Err(Error(
+                        "unexpected numerical implementation flags size".into(),
+                    ));
+                }
+                candidate.numerical_impl_flags = Some(flags);
+                if c.precision == Precision::Tf32
+                    && (flags & CUBLASLT_NUMERICAL_IMPL_FLAGS_TENSOR_OP_MASK == 0
+                        || flags & CUBLASLT_NUMERICAL_IMPL_FLAGS_INPUT_TF32 == 0
+                        || flags & CUBLASLT_NUMERICAL_IMPL_FLAGS_ACCUMULATOR_32F == 0)
+                {
+                    return Err(Error(format!(
+                        "candidate is not TF32 Tensor Core arithmetic with FP32 accumulation (flags {flags:#x})"
+                    )));
+                }
+            }
             plan.poison()?;
             plan.launch(&h.algo)?;
             let validation = plan.validation(&expected)?;
@@ -745,8 +788,8 @@ pub(crate) fn run(c: &BenchmarkConfig, profiler_range: bool) -> Result<Benchmark
     }
     let tflops = Statistics::of(&trials.iter().map(|t| t.tflops).collect::<Vec<_>>());
     Ok(BenchmarkResult {
-        schema_version: 2,
-        output_precision: if c.precision == Precision::Fp32 {
+        schema_version: 3,
+        output_precision: if c.precision.fp32_storage() {
             "fp32"
         } else {
             "bf16"
@@ -754,6 +797,7 @@ pub(crate) fn run(c: &BenchmarkConfig, profiler_range: bool) -> Result<Benchmark
         .into(),
         compute_mode: match (c.backend, c.precision) {
             (Backend::Cublaslt, Precision::Fp32) => "CUBLAS_COMPUTE_32F_PEDANTIC",
+            (Backend::Cublaslt, Precision::Tf32) => "CUBLAS_COMPUTE_32F_FAST_TF32",
             (Backend::Cublaslt, _) => "CUBLAS_COMPUTE_32F",
             (Backend::Cutile, Precision::Nvfp4) => "mmaf_scaled; FP32 accumulation",
             (Backend::Cutile, _) => "mmaf; FP32 accumulation; native input type",
@@ -772,13 +816,15 @@ pub(crate) fn run(c: &BenchmarkConfig, profiler_range: bool) -> Result<Benchmark
         telemetry_before,
         timing_scope: format!(
             "CUDA events around repeated dense GEMMs; {} output, FP32 accumulation{}; same allocations and operands reused, no explicit L2 flush; excludes encoding, transfers, allocation, heuristic search, tuning, graph construction and validation. Host timing includes submission and event synchronization. Graph mode has one additional untimed graph replay.",
-            if c.precision == Precision::Fp32 {
+            if c.precision.fp32_storage() {
                 "FP32"
             } else {
                 "BF16"
             },
             if c.precision == Precision::Fp32 && c.backend == Backend::Cublaslt {
                 " (cuBLASLt PEDANTIC, no TF32)"
+            } else if c.precision == Precision::Tf32 {
+                " (cuBLASLt TF32 Tensor Core multiplication)"
             } else {
                 ""
             }
@@ -788,6 +834,8 @@ pub(crate) fn run(c: &BenchmarkConfig, profiler_range: bool) -> Result<Benchmark
             match c.precision {
                 Precision::Fp32 =>
                     "FP32 uniform signed inputs without reduced-precision rounding; validation relative RMSE < 1e-5, scaled error <= 1 using 1e-5*abs(reference)+5e-6*reference_RMS",
+                Precision::Tf32 =>
+                    "FP32 uniform signed inputs identical to the full-FP32 mode; cuBLASLt rounds internally for TF32 multiplication; validation against original FP32 inputs: relative RMSE < 1e-3, scaled error <= 1 using 1e-3*abs(reference)+2e-3*reference_RMS",
                 Precision::Bf16 => "BF16 RNE-encoded signed inputs",
                 Precision::Fp8 => "FP8 E4M3 finite signed inputs, unit scalar scales",
                 Precision::Nvfp4 if c.backend == Backend::Cutile =>

@@ -1,7 +1,8 @@
 # Running and reusing the benchmark
 
 The Rust library and CLI measure dense GEMM with FP32 accumulation. Both
-cuBLASLt and the optional Rust cuTile backend support the following inputs:
+cuBLASLt and the optional Rust cuTile backend support BF16, FP8, NVFP4 and
+full FP32. TF32 is supported by cuBLASLt only:
 
 | `--precision` / Rust `Precision` | Inputs | Output | Register API |
 | --- | --- | --- | --- |
@@ -9,21 +10,77 @@ cuBLASLt and the optional Rust cuTile backend support the following inputs:
 | `fp8` / `Fp8` | FP8 E4M3 | BF16 | Dense and 2:4 sparse MMA |
 | `nvfp4` / `Nvfp4` | E2M1, E4M3 block-16 scales | BF16 | Dense and 2:4 sparse MMA |
 | `fp32` / `Fp32` | Full FP32 | FP32 | Dense scalar FMA on CUDA cores |
+| `tf32` / `Tf32` | FP32 storage, TF32 multiplication | FP32 | Not implemented |
 
 Every GEMM precision shares shape/seed controls, validated candidate selection,
 tuning, stream/graph timing, warmup, repeated trials, telemetry, JSON/CSV and
 optional Nsight capture. cuTile tunes up to eight tile configurations. Its
 kernels are initial implementations, not claims of optimal throughput.
 
-FP32 cuBLASLt uses `CUBLAS_COMPUTE_32F_PEDANTIC`, which retains full FP32
-arithmetic instead of substituting TF32. cuTile uses FP32 inputs directly in
-its matrix operation. Results record `output_precision` and `compute_mode`
-(schema 2; these fields default to empty strings when reading older records).
-See NVIDIA's [compute-type definitions](https://docs.nvidia.com/cuda/archive/13.0.2/cublas/index.html#cublascomputetype-t)
-and [Tile IR matrix operations](https://docs.nvidia.com/cuda/tile-ir/13.4/sections/operations.html#cuda-tile-mmaf).
-
 The separate [register throughput API](register-ceiling.md) measures reused
 register operands. Its instruction TFLOPS has a different scope from GEMM.
+
+## FP32, TF32 and backend selection
+
+`--backend` chooses the GEMM implementation: `cublaslt` or `cutile`. FP32 and
+TF32 describe arithmetic formats/modes; cuBLASLt can support both within the
+same library. Their GPU execution paths can differ: TF32 permits Tensor Core
+operations, while this project's previously profiled full-FP32 cuBLASLt kernel
+used the FP32 FMA pipeline. Those profiler observations are recorded in the
+[results report](final-report.md#nsight-measurements).
+
+| cuBLASLt arithmetic mode | Input/output storage | Computation | Project support |
+| --- | --- | --- | --- |
+| `CUBLAS_COMPUTE_32F_PEDANTIC` | FP32 | Full FP32 throughout; excludes TF32 substitution | Used by `--backend cublaslt --precision fp32` |
+| `CUBLAS_COMPUTE_32F_FAST_TF32` | FP32 | TF32 multiplication on Tensor Cores with FP32 accumulation | Used by `--backend cublaslt --precision tf32` or `Precision::Tf32` |
+
+FP32 storage or accumulation alone does not establish full-FP32 multiplication.
+Check the recorded `backend`, `config.precision`, `output_precision` and
+`compute_mode`. The last two fields were added in schema 2 and default to empty
+strings for older records. Schema 3 additionally records each cuBLASLt
+candidate's `numerical_impl_flags` (absent for cuTile and older records).
+TF32 selection requires flags indicating Tensor Core execution, TF32 operands
+and FP32 accumulation. Other candidates are retained with an error and excluded;
+if none qualify, the run fails instead of reporting a full-FP32 fallback as TF32.
+These are library implementation descriptors, not profiler counters. The manifest
+also records `NVIDIA_TF32_OVERRIDE`, which can affect library behavior.
+NVIDIA documents these modes in its
+[compute-type definitions](https://docs.nvidia.com/cuda/archive/13.0.2/cublas/index.html#cublascomputetype-t).
+
+The optional cuTile backend uses FP32 inputs directly in its matrix operation;
+see NVIDIA's [Tile IR matrix operations](https://docs.nvidia.com/cuda/tile-ir/13.4/sections/operations.html#cuda-tile-mmaf).
+`--backend cutile --precision tf32` is rejected explicitly.
+
+### Comparing full FP32 and TF32
+
+Use the same shape, seed, timing, warmup and trial settings with each mode:
+
+```sh
+cargo run --release --locked -- --backend cublaslt --precision fp32 --shapes 4096x4096x4096 --timing graph --warmup 100 --iterations 100 --trials 5 --output artifacts/fp32-comparison-001
+cargo run --release --locked -- --backend cublaslt --precision tf32 --shapes 4096x4096x4096 --timing graph --warmup 100 --iterations 100 --trials 5 --output artifacts/tf32-comparison-001
+```
+
+Both modes upload identical full-FP32 input values for a matching shape/seed;
+the host does not pre-round TF32 inputs. cuBLASLt performs the TF32 conversion.
+Both validate against FP64 CPU sums of the original FP32 inputs, so TF32's
+recorded error includes the accuracy cost of reduced-precision multiplication.
+Every output is checked for finiteness; numerical reference checking is sampled
+unless `--validation-samples` covers all `M*N` outputs.
+
+Full FP32 retains relative RMSE `< 1e-5` and maximum scaled error `<= 1`, with
+denominator `1e-5*abs(reference) + 5e-6*reference_RMS`. TF32 uses relative RMSE
+`< 1e-3` and maximum scaled error `<= 1`, with denominator
+`1e-3*abs(reference) + 2e-3*reference_RMS`. Denominators have a `1e-12` floor.
+These are acceptance thresholds for this benchmark's signed uniform inputs,
+not universal error bounds for application matrices. Inspect `validation_after`
+and candidate validations alongside throughput; FP32 output does not restore
+precision lost in TF32 multiplication.
+
+Repeat comparisons with fresh output directories, alternating mode and shape
+order. The example's five trials are one round, not a global shape search.
+The [results report](final-report.md) records the measured search scope, variation
+and best tested shapes. Different arithmetic modes can select different kernels;
+their optimal shape need not be the same.
 
 ## Build and run
 

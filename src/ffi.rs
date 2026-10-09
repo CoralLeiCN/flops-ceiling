@@ -4,6 +4,14 @@
 use std::ffi::{c_char, c_int, c_void};
 pub type Handle = *mut c_void;
 
+pub const CUBLAS_COMPUTE_32F: c_int = 68;
+pub const CUBLAS_COMPUTE_32F_PEDANTIC: c_int = 69;
+pub const CUBLAS_COMPUTE_32F_FAST_TF32: c_int = 77;
+pub const CUBLASLT_ALGO_CAP_NUMERICAL_IMPL_FLAGS: c_int = 15;
+pub const CUBLASLT_NUMERICAL_IMPL_FLAGS_TENSOR_OP_MASK: u64 = 0xfe;
+pub const CUBLASLT_NUMERICAL_IMPL_FLAGS_ACCUMULATOR_32F: u64 = 0x02 << 8;
+pub const CUBLASLT_NUMERICAL_IMPL_FLAGS_INPUT_TF32: u64 = 0x04 << 16;
+
 #[repr(C)]
 #[derive(Clone, Copy, Default)]
 pub struct Algo {
@@ -87,6 +95,13 @@ unsafe extern "C" {
         returned: *mut c_int,
     ) -> c_int;
     pub fn cublasLtMatmulAlgoConfigGetAttribute(
+        algo: *const Algo,
+        attr: c_int,
+        value: Handle,
+        size: usize,
+        written: *mut usize,
+    ) -> c_int;
+    pub fn cublasLtMatmulAlgoCapGetAttribute(
         algo: *const Algo,
         attr: c_int,
         value: Handle,
