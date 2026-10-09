@@ -47,6 +47,13 @@ also records `NVIDIA_TF32_OVERRIDE`, which can affect library behavior.
 NVIDIA documents these modes in its
 [compute-type definitions](https://docs.nvidia.com/cuda/archive/13.0.2/cublas/index.html#cublascomputetype-t).
 
+Changing a shape may change cuBLASLt's selected tile, kernel or split-K setting,
+but this benchmark keeps `CUBLAS_COMPUTE_32F_PEDANTIC` for every FP32 shape.
+The observed 3072³ versus 4096³ difference therefore compares shapes within the
+same backend and arithmetic mode; it is not an FP32-versus-TF32 comparison.
+Measured shape differences and their limitations remain in the
+[results report](final-report.md#fp32-candidate-shape-measurements-2026-10-07).
+
 The optional cuTile backend uses FP32 inputs directly in its matrix operation;
 see NVIDIA's [Tile IR matrix operations](https://docs.nvidia.com/cuda/tile-ir/13.4/sections/operations.html#cuda-tile-mmaf).
 `--backend cutile --precision tf32` is rejected explicitly.
