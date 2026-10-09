@@ -553,6 +553,8 @@ exit states, inputs, launch settings, raw trials and diagnostics remain in:
 
 | Evidence | External archive |
 | --- | --- |
+| Oct 9 UTC PR #1 validation: release/cuTile build checks, 14 exhaustive GPU correctness cases and expected cuTile rejection; 42 short trials are not performance rankings (mixed RUN-0009) | `/home/coral/inference-artifacts/flops-ceiling/2026-10-09T22-33-17Z-pr-merge-validation` |
+| PR review follow-up: report-data audits, documentation checks and squash-merge records | `/home/coral/inference-artifacts/flops-ceiling/2026-10-09T23-29-24Z-pr-squash-merge-followup` |
 | Oct 8 UTC explicit TF32 implementation, small correctness checks, large-shape comparison, recovered host audit and raw telemetry | `/home/coral/inference-artifacts/flops-ceiling/2026-10-08T23-01-58Z-tf32-comparison` |
 | Oct 8 UTC smaller FP32/TF32 shapes, separately declared 1000-GEMM batches and raw telemetry | `/home/coral/inference-artifacts/flops-ceiling/2026-10-08T23-30-22Z-tf32-small-shapes` |
 | TF32 implementation, protocols, rounds, failures/recovery and result analysis journals | `/home/coral/inference-artifacts/flops-ceiling/journals/dgx-spark/tf32` |
