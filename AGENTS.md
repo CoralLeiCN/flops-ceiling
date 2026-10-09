@@ -9,11 +9,40 @@ benchmarking and experiment-journal guidance for this repository's scope.
   regression fix that needs a regression test.
 - Keep documentation proportional to implemented behavior and observed results.
   Avoid speculative implementation or troubleshooting documentation.
-- Keep specifications, design notes, usage guides and attribution documents in
-  `docs/`. Keep `README.md`, `LICENSE` and `AGENTS.md` at the repository root.
+- Keep package specifications, design notes, usage guides and attribution
+  documents in `docs/`. Keep `README.md`, `LICENSE` and `AGENTS.md` at the
+  repository root. Keep experiment-specific documents in their external
+  experiment workspace, as described below.
 - Record important assumptions, tradeoffs, and user corrections in the relevant
   authoritative documentation. Update that documentation when direction changes;
   do not maintain a duplicate correction history.
+
+## Experiment workspaces
+
+- The reusable package's implemented scope is defined in `docs/SPEC.md`.
+  An experiment has its own intent, specification and plan; do not replace
+  the package's purpose or defaults with an experiment's research questions.
+- The GB10 hardware-to-GEMM-shape study is one experiment,
+  `GB10-GEMM-SHAPES-001`, maintained outside this package at
+  `/home/coral/inference-artifacts/flops-ceiling/experiments/gb10-gemm-shapes/`.
+  Read that workspace's `AGENTS.md`, `intent.md`, `spec.md` and `plan.md` when
+  working on the study. Inventory, measurement, confirmation and profiling are
+  phases of the same experiment, not separate experiments.
+- Every time the conversation discusses that experiment's intention, update
+  its external `intent.md` before ending the turn, including clarifications,
+  reaffirmations and changes. Refresh its review date using the user's timezone
+  and reconcile its spec/plan when affected. Do not wait for another request.
+  Distinguish the user's agreed direction from proposals and unresolved questions;
+  maintain the current account rather than a duplicate correction history.
+- Keep experiment `intent.md` files short and limited to the user's explicitly
+  stated purpose, questions and scope. Put technical elaboration, assumptions,
+  proposed controls and completion criteria in the experiment's `spec.md`, and
+  execution steps in its `plan.md`. Label agent proposals as proposals; do not
+  present them as user intent.
+- Keep experiment-specific drivers, analysis and documents in that workspace.
+  Reusable package changes remain normal package work and must document their
+  implemented behavior. Consolidate verified results in `docs/final-report.md`
+  with the experiment ID and links to external evidence.
 
 ## Performance experiments
 
