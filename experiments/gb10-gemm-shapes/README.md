@@ -34,10 +34,10 @@ stay outside Git at
 `/home/coral/inference-artifacts/flops-ceiling/experiments/gb10-gemm-shapes/`
 on the measurement host. Keep each raw attempt in a unique UTC-timestamped
 `runs/` directory there, with journal records under
-`journals/dgx-spark/<precision>/`, README indexes and RUN IDs. These output
-directories are created when needed; there are no new measurements here yet.
-Local build and output directories are ignored. The external archive points
-back here for the maintained experiment documents.
+`journals/dgx-spark/<precision>/`, README indexes and RUN IDs. The external
+evidence directory and its subdirectories are created when needed; there are
+no new measurements yet. Local build and output directories are ignored.
+The Git-tracked files here are the maintained experiment documents.
 
 Verified findings will be summarized in the package's existing
 [single results report](../../docs/final-report.md)
