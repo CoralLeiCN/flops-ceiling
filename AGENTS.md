@@ -11,7 +11,7 @@ benchmarking and experiment-journal guidance for this repository's scope.
   Avoid speculative implementation or troubleshooting documentation.
 - Keep package specifications, design notes, usage guides and attribution
   documents in `docs/`. Keep `README.md`, `LICENSE` and `AGENTS.md` at the
-  repository root. Keep experiment-specific documents in their external
+  repository root. Keep experiment-specific documents in their versioned
   experiment workspace, as described below.
 - Record important assumptions, tradeoffs, and user corrections in the relevant
   authoritative documentation. Update that documentation when direction changes;
@@ -23,13 +23,13 @@ benchmarking and experiment-journal guidance for this repository's scope.
   An experiment has its own intent, specification and plan; do not replace
   the package's purpose or defaults with an experiment's research questions.
 - The GB10 hardware-to-GEMM-shape study is one experiment,
-  `GB10-GEMM-SHAPES-001`, maintained outside this package at
-  `/home/coral/inference-artifacts/flops-ceiling/experiments/gb10-gemm-shapes/`.
+  `GB10-GEMM-SHAPES-001`, maintained in this Git repository at
+  `experiments/gb10-gemm-shapes/`, separately from the reusable package.
   Read that workspace's `AGENTS.md`, `intent.md`, `spec.md` and `plan.md` when
   working on the study. Inventory, measurement, confirmation and profiling are
   phases of the same experiment, not separate experiments.
 - Every time the conversation discusses that experiment's intention, update
-  its external `intent.md` before ending the turn, including clarifications,
+  its versioned `intent.md` before ending the turn, including clarifications,
   reaffirmations and changes. Refresh its review date using the user's timezone
   and reconcile its spec/plan when affected. Do not wait for another request.
   Distinguish the user's agreed direction from proposals and unresolved questions;
@@ -39,7 +39,10 @@ benchmarking and experiment-journal guidance for this repository's scope.
   proposed controls and completion criteria in the experiment's `spec.md`, and
   execution steps in its `plan.md`. Label agent proposals as proposals; do not
   present them as user intent.
-- Keep experiment-specific drivers, analysis and documents in that workspace.
+- Keep experiment-specific drivers, analysis source and documents in that
+  versioned workspace. Keep raw measurements, generated analysis, journals and
+  profiler captures outside Git under
+  `/home/coral/inference-artifacts/flops-ceiling/experiments/gb10-gemm-shapes/`.
   Reusable package changes remain normal package work and must document their
   implemented behavior. Consolidate verified results in `docs/final-report.md`
   with the experiment ID and links to external evidence.
@@ -75,8 +78,10 @@ benchmarking and experiment-journal guidance for this repository's scope.
 - Store detailed results, append-only experiment journals, imported reports and
   research notes outside the repository, under
   `/home/coral/inference-artifacts/flops-ceiling/` on this host. Keep them out of
-  Git; local scratch output belongs in ignored `artifacts/`, `experiments/` or
-  `results/` directories. Do not recreate `docs/experiments/` or `docs/research/`.
+  Git; local scratch output belongs in ignored `artifacts/`, `results/` or the
+  experiment's ignored output directories. The experiment's maintained intent,
+  specification, plan and source belong in Git. Do not recreate
+  `docs/experiments/` or `docs/research/` as journal/research archives.
 - Organize external journals by hardware and precision with a `README.md` index.
 - Store each experiment attempt or follow-up in its own UTC-timestamped file:
   `<YYYY-MM-DDTHH-MM-SSZ>-<short-slug>.md`.

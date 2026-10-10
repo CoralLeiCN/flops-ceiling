@@ -14,7 +14,8 @@ See the [project specification and attribution](docs/SPEC.md).
 [Build, run, and reuse the library](docs/benchmarking.md) ·
 [Register throughput API](docs/register-ceiling.md) ·
 [Nsight profiling](docs/profiling.md) ·
-[Final performance report](docs/final-report.md)
+[Final performance report](docs/final-report.md) ·
+[GB10 GEMM shapes experiment](experiments/gb10-gemm-shapes/README.md)
 
 Licensed under the [Apache License 2.0](LICENSE).
 See [third-party notices](docs/THIRD_PARTY_NOTICES.md) for attribution.
