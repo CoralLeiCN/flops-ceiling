@@ -1,0 +1,6 @@
+# Generated evidence stays outside Git; experiment documents and source are tracked.
+artifacts/
+runs/
+journals/
+results/
+target/

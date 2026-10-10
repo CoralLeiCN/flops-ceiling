@@ -3,7 +3,9 @@
 This package uses Rust to measure NVIDIA GPU TFLOPS, initially targeting DGX
 Spark with BF16, FP32, FP8, and FP4 benchmarks. This document describes the
 reusable package's implemented behavior. Experiment-specific intent,
-specifications and plans are maintained in external experiment workspaces.
+specifications and plans are versioned separately in
+[experiment workspaces](../experiments/gb10-gemm-shapes/README.md) within this
+repository. Raw measurements and journals remain in the external artifact archive.
 
 ## Benchmark scope
 

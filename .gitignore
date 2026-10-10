@@ -5,7 +5,8 @@
 # Detailed experiment output and history stay outside version control.
 /docs/experiments/
 /docs/research/
-/experiments/
+/experiments/*
+!/experiments/gb10-gemm-shapes/
 /results/
 *.nsys-rep
 *.ncu-rep
